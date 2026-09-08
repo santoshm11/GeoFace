@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: attendance_postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${DB_USER} -d $${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: attendance_app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DB_HOST=postgres
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PORT=5432
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=True
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    ports:
+      - "9000:9000"
+    volumes:
+      - .:/app
+      - media_volume:/app/media
+      - static_volume:/app/static
+      - /home/sreekanth/Downloads/3rd-sem-B:/app/images
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  media_volume:
+  static_volume:
